@@ -28,6 +28,7 @@ function main() {
 	source /tmp/overlay/variables.sh
 
 	setup_users
+	fix_armbian_env
 }
 
 function setup_users() {
@@ -36,8 +37,18 @@ function setup_users() {
 	echo root:"$ROOT_PASSWORD" | chpasswd
 }
 
+# Правит переменные окруженя в соответствии с рекомендациями:
+# https://armbian.com/orangepi-5/
+#
+#    f you are having a Orange Pi 5B variant, replace fdtfile=rockchip/rk3588s-orangepi-5.dtb
+#    in /boot/armbianEnv.txt with fdtfile=rockchip/rk3588s-orangepi-5b.dtb
+#
+function fix_armbian_env() {
+	sed -i 's/orangepi-5\.dtb/orangepi-5b.dtb/' /boot/armbianEnv.txt
+}
+
 #
 # Старт конфигурации.
 #
 
-main "$@"
+ain "$@"
