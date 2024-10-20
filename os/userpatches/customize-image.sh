@@ -13,23 +13,24 @@
 # The sd card's root path is accessible via $SDCARD variable.
 
 RELEASE=$1
-LINUXFAMILY=$2
-BOARD=$3
-BUILD_DESKTOP=$4
+# LINUXFAMILY=$2
+# BOARD=$3
+# BUILD_DESKTOP=$4
 
-Main() {
+function main() {
 	if [ "$RELEASE" != "jammy" ]; then
 		echo "Only Ubuntu 22.04 supported."
 		exit 1
 	fi
 
 	# Подключаем файл с переменными.
+	# shellcheck disable=SC1091
 	source /tmp/overlay/variables.sh
 
-	SetupUsers
+	setup_users
 }
 
-SetupUsers() {
+function setup_users() {
 	# Устанавливаем пароль рута.
 	rm /root/.not_logged_in_yet
 	echo root:"$ROOT_PASSWORD" | chpasswd
@@ -39,4 +40,4 @@ SetupUsers() {
 # Старт конфигурации.
 #
 
-Main "$@"
+main "$@"

@@ -18,3 +18,7 @@ endif
 		DISABLE_IPV6=false \
 		RELEASE=jammy \
 		CONSOLE_AUTOLOGIN=no
+
+.PHONY: lint
+lint:
+	shellcheck userpatches/customize-image.sh
