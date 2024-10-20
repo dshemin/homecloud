@@ -1,0 +1,4 @@
+[submodule "os/armbian"]
+	path = os/armbian
+	url = https://github.com/armbian/build
+	branch = main
