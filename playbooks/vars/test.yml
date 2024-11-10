@@ -1,3 +1,0 @@
-postgresql:
-  root_password: 123456
-  volume_size: 4G

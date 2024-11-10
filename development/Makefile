@@ -16,6 +16,15 @@ start: create
 	k3d cluster start $(CLUSTER_NAME)
 
 #
+# Stop k3s development cluster.
+#
+.PHONY: stop
+stop:
+ifdef CLUSTER_CREATED
+	k3d cluster stop $(CLUSTER_NAME)
+endif
+
+#
 # Create k3s development cluster.
 #
 .PHONY: create
@@ -25,10 +34,10 @@ ifndef CLUSTER_CREATED
 endif
 
 #
-# Stop k3s development cluster.
+# Destroy k3s development cluster.
 #
-.PHONY: stop
-stop:
+.PHONY: destroy
+destroy:
 ifdef CLUSTER_CREATED
-	k3d cluster stop $(CLUSTER_NAME)
+	k3d cluster delete $(CLUSTER_NAME)
 endif
