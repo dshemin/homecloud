@@ -19,10 +19,7 @@ export type Secrets = Record<string, Record<string, any>>;
 
 export type HelmChart = {
   // A name of the chart.
-  name: string;
-
-  // A repository where chart is placed.
-  repository: string;
+  chart: string;
 
   // A chart version to use.
   version: string;
@@ -74,8 +71,7 @@ export class Service extends pulumi.ComponentResource {
         namespace,
       },
       spec: {
-        chart: chart.name,
-        repo: chart.repository,
+        chart: chart.chart,
         targetNamespace: namespace,
         version: chart.version,
         valuesContent: stringify(chart.values),

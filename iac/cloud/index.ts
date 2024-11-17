@@ -1,6 +1,9 @@
+import * as pulumi from "@pulumi/pulumi";
 import * as k8s from "@pulumi/kubernetes";
 import { Service } from "./service";
 import { Buffer } from "buffer";
+
+const config = new pulumi.Config();
 
 const main = () => {
   createNamespace();
@@ -26,13 +29,14 @@ const createPostgresql = (): void => {
     namespace: NAMESPACE,
     secrets: {
       "postgresql-secret": {
-        "postgres-password": base64("123456"),
+        "postgres-password": config
+          .requireSecret("postgresqlPassword")
+          .apply(base64),
       },
     },
     chart: {
-      name: "postgresql",
-      repository: "https://charts.bitnami.com/bitnami",
-      version: "12.3.1",
+      chart: "oci://registry-1.docker.io/bitnamicharts/postgresql",
+      version: "16.2.1",
       values: {
         auth: {
           existingSecret: "postgresql-secret",
