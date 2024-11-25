@@ -9,6 +9,7 @@ const main = () => {
   createNamespace();
 
   createPostgresql();
+  createWhoDB();
 };
 
 const NAMESPACE = "homecloud";
@@ -50,6 +51,32 @@ const createPostgresql = (): void => {
       },
     },
   });
+};
+
+const createWhoDB = (): void => {
+  config.requireSecret("postgresqlPassword").apply(
+    (pass) =>
+      new Service("whodb", {
+        namespace: NAMESPACE,
+        chart: {
+          chart: "oci://ghcr.io/dshemin/whodb",
+          version: "0.1.0",
+          values: {
+            profiles: {
+              postgres: [
+                {
+                  host: `postgresql.${NAMESPACE}.svc.cluster.local`,
+                  user: "postgres",
+                  password: pass,
+                  port: "5432",
+                  database: "postgres",
+                },
+              ],
+            },
+          },
+        },
+      }),
+  );
 };
 
 const base64 = (s: string): string => {
