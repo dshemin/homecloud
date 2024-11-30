@@ -13,6 +13,7 @@ const main = () => {
 
   createPostgresql();
   createWhoDB();
+  createDBOperator();
 };
 
 const MAIN_NAMESPACE = "homecloud";
@@ -104,3 +105,48 @@ const createWhoDB = (): void => {
       }),
   );
 };
+
+const createDBOperator = (): void => {
+  const secretName = "db-operator-secret";
+
+  new Service("db-operator", {
+    namespace: MAIN_NAMESPACE,
+    secrets: {
+      [secretName]: {
+        user: base64("postgres"),
+        password: config.requireSecret("postgresqlPassword").apply(base64),
+      },
+    },
+    chart: {
+      chart: "db-operator",
+      repo: "https://kloeckner-i.github.io/charts/",
+      version: "1.7.0",
+    },
+  });
+
+  new k8s.apiextensions.CustomResource(`db-operator-instance`, {
+    apiVersion: "kci.rocks/v1beta1",
+    kind: "DbInstance",
+    metadata: {
+      name: "main",
+      namespace: MAIN_NAMESPACE,
+    },
+    spec: {
+      adminSecretRef: {
+        Name: secretName,
+        Namespace: MAIN_NAMESPACE,
+      },
+      engine: "postgres",
+      generic: {
+        host: `postgresql.${MAIN_NAMESPACE}.svc.cluster.local`,
+        port: 5432,
+      },
+    },
+  });
+};
+
+const base64 = (s: string): string => {
+  return Buffer.from(s, "utf8").toString("base64");
+};
+
+main();
