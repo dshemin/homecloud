@@ -1,6 +1,7 @@
-import * as pulumi from "@pulumi/pulumi";
-import * as k8s from "@pulumi/kubernetes";
 import { stringify } from "yaml";
+import { Secret } from "@pulumi/kubernetes/core/v1/secret";
+import { CustomResource } from "@pulumi/kubernetes/apiextensions";
+import { ComponentResource, ComponentResourceOptions } from "@pulumi/pulumi";
 
 // An arguments for creating Service component.
 export type ServiceArgs = {
@@ -33,25 +34,26 @@ export type HelmChart = {
 
 // The service.
 // Holds all common logic for declaring a service.
-export class Service extends pulumi.ComponentResource {
+export class Service extends ComponentResource {
   constructor(
     name: string,
     args: ServiceArgs,
-    opts?: pulumi.ComponentResourceOptions,
+    opts?: ComponentResourceOptions,
   ) {
+    args.secrets = args.secrets ?? {};
+
     super("cloud:Service", name, args, opts);
 
-    this.createSecrets(name, args.namespace, args.secrets ?? {});
+    this.createSecrets(args.namespace, args.secrets);
     this.createHelmChart(name, args.namespace, args.chart);
   }
 
   private createSecrets(
-    svcName: string,
     namespace: string,
     secrets: Record<string, valueof<Secrets>>,
   ) {
     Object.entries(secrets).forEach(([name, data]) => {
-      new k8s.core.v1.Secret(name, {
+      new Secret(name, {
         metadata: {
           name,
           namespace,
@@ -77,7 +79,7 @@ export class Service extends pulumi.ComponentResource {
       spec.repo = chart.repo;
     }
 
-    new k8s.apiextensions.CustomResource(`${svcName}-helm`, {
+    new CustomResource(`${svcName}-helm`, {
       apiVersion: "helm.cattle.io/v1",
       kind: "HelmChart",
       metadata: {
