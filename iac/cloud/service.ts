@@ -21,6 +21,9 @@ export type HelmChart = {
   // A name of the chart.
   chart: string;
 
+  // A repository path, not required. Should be provided only for http/https repositories.
+  repo?: string;
+
   // A chart version to use.
   version: string;
 
@@ -63,6 +66,17 @@ export class Service extends pulumi.ComponentResource {
     namespace: string,
     chart: HelmChart,
   ) {
+    const spec: Record<string, any> = {
+      chart: chart.chart,
+      targetNamespace: namespace,
+      version: chart.version,
+      valuesContent: stringify(chart.values),
+    };
+
+    if (chart.repo != "") {
+      spec.repo = chart.repo;
+    }
+
     new k8s.apiextensions.CustomResource(`${svcName}-helm`, {
       apiVersion: "helm.cattle.io/v1",
       kind: "HelmChart",
@@ -70,12 +84,7 @@ export class Service extends pulumi.ComponentResource {
         name: svcName,
         namespace,
       },
-      spec: {
-        chart: chart.chart,
-        targetNamespace: namespace,
-        version: chart.version,
-        valuesContent: stringify(chart.values),
-      },
+      spec: spec,
     });
   }
 }
