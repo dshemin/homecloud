@@ -40,9 +40,9 @@ export class Service extends ComponentResource {
     args: ServiceArgs,
     opts?: ComponentResourceOptions,
   ) {
-    args.secrets = args.secrets ?? {};
+    super("homecloud:cloud:Service", name, {}, opts);
 
-    super("cloud:Service", name, args, opts);
+    args.secrets = args.secrets ?? {};
 
     this.createSecrets(args.namespace, args.secrets);
     this.createHelmChart(name, args.namespace, args.chart);
@@ -67,7 +67,7 @@ export class Service extends ComponentResource {
     svcName: string,
     namespace: string,
     chart: HelmChart,
-  ) {
+  ): CustomResource {
     const spec: Record<string, any> = {
       chart: chart.chart,
       targetNamespace: namespace,
@@ -79,7 +79,7 @@ export class Service extends ComponentResource {
       spec.repo = chart.repo;
     }
 
-    new CustomResource(`${svcName}-helm`, {
+    return new CustomResource(`${svcName}-helm`, {
       apiVersion: "helm.cattle.io/v1",
       kind: "HelmChart",
       metadata: {

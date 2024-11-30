@@ -1,8 +1,9 @@
+import { CertManager } from "@pulumi/kubernetes-cert-manager";
+
 import {
   createHomecloudNamespace,
   createCertManagerNamespace,
 } from "./src/namespaces";
-import { createCertManager } from "./src/cert-manager";
 import { createPostgresql } from "./src/postgresql";
 import { createWhoDB } from "./src/whodb";
 import { createDBOperator } from "./src/db-operator";
@@ -11,7 +12,12 @@ import { postgresqlPassword } from "./src/config";
 const hcnm = createHomecloudNamespace();
 const cmnm = createCertManagerNamespace();
 
-createCertManager(cmnm);
+new CertManager("cert-manager", {
+  installCRDs: true,
+  helmOptions: {
+    namespace: cmnm,
+  },
+});
 
 createPostgresql(hcnm, postgresqlPassword);
 
