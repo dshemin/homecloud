@@ -1,14 +1,21 @@
 {
-    "name": "cloud",
-    "main": "index.ts",
-    "devDependencies": {
-        "@types/node": "^18",
-        "typescript": "^5.0.0"
-    },
-    "dependencies": {
-        "@pulumi/kubernetes": "^4.0.0",
-        "@pulumi/kubernetes-cert-manager": "^0.0.7",
-        "@pulumi/pulumi": "^3.113.0",
-        "yaml": "^2.6.0"
-    }
+  "name": "cloud",
+  "main": "index.ts",
+  "scripts": {
+    "test": "mocha --forbid-only -r ts-node/register ./**/*.spec.ts",
+    "watch": "npm test -- --watch --watch-files ./src/**/*,index.ts"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^18.19.67",
+    "mocha": "^10.8.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@pulumi/kubernetes": "^4.0.0",
+    "@pulumi/kubernetes-cert-manager": "^0.0.7",
+    "@pulumi/pulumi": "^3.113.0",
+    "yaml": "^2.6.0"
+  }
 }
