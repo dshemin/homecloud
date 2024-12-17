@@ -1,5 +1,13 @@
-import { Config } from "@pulumi/pulumi";
+import { Config, output } from "@pulumi/pulumi";
 
 const config = new Config();
 
-export const postgresqlPassword = config.requireSecret("postgresqlPassword");
+export const namespaces = {
+  main: output("homecloud"),
+  certManager: output("cert-manager"),
+};
+
+export const postgresql = {
+  password: config.requireSecret("postgresqlPassword"),
+  username: output("postgres"),
+};

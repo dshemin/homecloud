@@ -1,94 +1,119 @@
 import { stringify } from "yaml";
 import { Secret } from "@pulumi/kubernetes/core/v1/secret";
-import { CustomResource } from "@pulumi/kubernetes/apiextensions";
-import { ComponentResource, ComponentResourceOptions } from "@pulumi/pulumi";
+import {
+  CustomResource,
+  CustomResourceArgs,
+} from "@pulumi/kubernetes/apiextensions";
+import {
+  ComponentResource,
+  ComponentResourceOptions,
+  Output,
+  output,
+} from "@pulumi/pulumi";
 
-// An arguments for creating Service component.
-export type ServiceArgs = {
-  // A k8s namespace where all resource should be placed.
-  namespace: string;
+export interface ServiceResourceArgs {
+  namespace: Output<string>;
+}
 
-  // A map of all secrets for this service where key is a secret name which will
-  // be used for reference this secret and value is secret data.
-  secrets?: Secrets;
+export abstract class ServiceResource<
+  T extends ServiceResourceArgs,
+> extends ComponentResource {
+  public readonly host: Output<string>;
 
-  // Values for HelmChard resource.
-  chart: HelmChart;
-};
+  protected readonly name: string;
+  protected readonly namespace: Output<string>;
 
-export type Secrets = Record<string, Record<string, any>>;
+  constructor(name: string, args: T, opts?: ComponentResourceOptions) {
+    super("homecloud:resource:Service", name, {}, opts);
 
-export type HelmChart = {
-  // A name of the chart.
-  chart: string;
+    this.name = name;
+    this.namespace = args.namespace;
 
-  // A repository path, not required. Should be provided only for http/https repositories.
-  repo?: string;
+    this.createSecrets(args);
+    this.createHelmChart(args);
+    this.createResources(args);
 
-  // A chart version to use.
-  version: string;
+    this.host = output(`${this.name}.${this.namespace}.svc.cluster.local`);
 
-  // Values to customize default.
-  values?: Record<string, any>;
-};
-
-// The service.
-// Holds all common logic for declaring a service.
-export class Service extends ComponentResource {
-  constructor(
-    name: string,
-    args: ServiceArgs,
-    opts?: ComponentResourceOptions,
-  ) {
-    super("homecloud:cloud:Service", name, {}, opts);
-
-    args.secrets = args.secrets ?? {};
-
-    this.createSecrets(args.namespace, args.secrets);
-    this.createHelmChart(name, args.namespace, args.chart);
+    this.registerOutputs({
+      host: this.host,
+    });
   }
 
-  private createSecrets(
-    namespace: string,
-    secrets: Record<string, valueof<Secrets>>,
-  ) {
-    Object.entries(secrets).forEach(([name, data]) => {
-      new Secret(name, {
+  protected abstract chart(): string;
+
+  protected repo(): string {
+    return "";
+  }
+
+  protected abstract version(): string;
+
+  protected secrets(args: T): Record<string, Record<string, any>> {
+    return {};
+  }
+
+  protected buildValues(args: T): Record<string, any> {
+    return {};
+  }
+
+  protected resources(args: T): Record<string, CustomResourceArgs> {
+    return {};
+  }
+
+  private createSecrets(args: T) {
+    Object.entries(this.secrets(args)).forEach(([name, data]) => {
+      const s = new Secret(`${this.name}-secret-${name}`, {
         metadata: {
           name,
-          namespace,
+          namespace: this.namespace,
         },
         data,
+      });
+
+      this.registerOutputs({
+        [name]: s,
       });
     });
   }
 
-  private createHelmChart(
-    svcName: string,
-    namespace: string,
-    chart: HelmChart,
-  ): CustomResource {
+  private createHelmChart(args: T): CustomResource {
     const spec: Record<string, any> = {
-      chart: chart.chart,
-      targetNamespace: namespace,
-      version: chart.version,
-      valuesContent: stringify(chart.values),
+      chart: this.chart(),
+      targetNamespace: this.namespace,
+      version: this.version(),
     };
 
-    if (chart.repo != "") {
-      spec.repo = chart.repo;
+    const repo = this.repo();
+
+    if (repo != "") {
+      spec.repo = repo;
     }
 
-    return new CustomResource(`${svcName}-helm`, {
+    const values = this.buildValues(args);
+    if (args) {
+      spec.valuesContent = stringify(values);
+    }
+
+    const cr = new CustomResource(`${this.name}-helm`, {
       apiVersion: "helm.cattle.io/v1",
       kind: "HelmChart",
       metadata: {
-        name: svcName,
-        namespace,
+        name: this.name,
+        namespace: this.namespace,
       },
       spec: spec,
     });
+
+    this.registerOutputs({
+      helm: cr,
+    });
+
+    return cr;
+  }
+
+  private createResources(args: T) {
+    Object.entries(this.resources(args)).forEach(([name, data]) => {
+      const r = new CustomResource(`${this.name}-${name}`, data);
+    });
   }
 }
-
-type valueof<T> = T[keyof T];

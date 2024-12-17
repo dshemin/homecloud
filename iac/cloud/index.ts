@@ -1,25 +1,37 @@
 import { CertManager } from "@pulumi/kubernetes-cert-manager";
 
-import {
-  createHomecloudNamespace,
-  createCertManagerNamespace,
-} from "./src/namespaces";
-import { createPostgresql } from "./src/postgresql";
-import { createWhoDB } from "./src/whodb";
-import { createDBOperator } from "./src/db-operator";
-import { postgresqlPassword } from "./src/config";
+import { createNamespace } from "./src/namespaces";
+import { Postresql } from "./src/postgresql";
+import { WhoDB } from "./src/whodb";
+import { DBOperator } from "./src/db-operator";
+import { namespaces, postgresql } from "./src/config";
 
-const hcnm = createHomecloudNamespace();
-const cmnm = createCertManagerNamespace();
+createNamespace(namespaces.main);
+createNamespace(namespaces.certManager);
 
 new CertManager("cert-manager", {
   installCRDs: true,
   helmOptions: {
-    namespace: cmnm,
+    namespace: namespaces.certManager,
   },
 });
 
-createPostgresql(hcnm, postgresqlPassword);
+const pgsql = new Postresql("postgres", {
+  namespace: namespaces.main,
+  password: postgresql.password,
+  size: "4G",
+});
 
-createWhoDB(hcnm, postgresqlPassword);
-createDBOperator(hcnm, postgresqlPassword);
+new WhoDB("whodb", {
+  namespace: namespaces.main,
+  username: postgresql.username,
+  password: postgresql.password,
+  host: pgsql.host,
+});
+
+new DBOperator("db-operator", {
+  namespace: namespaces.main,
+  dbUser: postgresql.username,
+  dbPassword: postgresql.password,
+  dbHost: pgsql.host,
+});

@@ -1,29 +1,45 @@
 import { Output } from "@pulumi/pulumi";
 
-import { Service } from "./service";
+import { ServiceResource, ServiceResourceArgs } from "./service";
 import { base64 } from "./utils";
 
-export const createPostgresql = (namespace: string, password: Output<string>) =>
-  new Service("postgresql", {
-    namespace,
-    secrets: {
-      "postgresql-secret": {
-        "postgres-password": password.apply(base64),
+export interface PostgresqlArgs extends ServiceResourceArgs {
+  password: Output<string>;
+  size: string;
+}
+
+export class Postresql extends ServiceResource<PostgresqlArgs> {
+  private static readonly SECRET_NAME = "postgresql-secret";
+
+  protected chart(): string {
+    return "oci://registry-1.docker.io/bitnamicharts/postgresql";
+  }
+
+  protected version(): string {
+    return "16.2.1";
+  }
+
+  protected secrets(args: PostgresqlArgs): Record<string, Record<string, any>> {
+    const key = `${this.name}-secret`;
+
+    return {
+      [key]: {
+        "postgres-password": args.password.apply(base64),
       },
-    },
-    chart: {
-      chart: "oci://registry-1.docker.io/bitnamicharts/postgresql",
-      version: "16.2.1",
-      values: {
-        auth: {
-          existingSecret: "postgresql-secret",
-        },
-        architecture: "standalone",
-        primary: {
-          persistence: {
-            size: "4G",
-          },
+    };
+  }
+
+  protected buildValues(args: PostgresqlArgs): Record<string, any> {
+    return {
+      auth: {
+        existingSecret: `${this.name}-secret`,
+      },
+      architecture: "standalone",
+      primary: {
+        persistence: {
+          size: args.size,
         },
       },
-    },
-  });
+    };
+  }
+}

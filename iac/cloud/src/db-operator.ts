@@ -1,47 +1,65 @@
 import { Output } from "@pulumi/pulumi";
 
-import { Service } from "./service";
+import { ServiceResource, ServiceResourceArgs } from "./service";
 import { base64 } from "./utils";
-import { CustomResource } from "@pulumi/kubernetes/apiextensions";
+import { CustomResourceArgs } from "@pulumi/kubernetes/apiextensions";
 
-export const createDBOperator = (
-  namespace: string,
-  password: Output<string>,
-) => {
-  const secretName = "db-operator-secret";
+export interface DBOperatorArgs extends ServiceResourceArgs {
+  dbUser: Output<string>;
+  dbPassword: Output<string>;
+  dbHost: Output<string>;
+}
 
-  new Service("db-operator", {
-    namespace: namespace,
-    secrets: {
-      [secretName]: {
-        user: base64("postgres"),
-        password: password.apply(base64),
-      },
-    },
-    chart: {
-      chart: "db-operator",
-      repo: "https://kloeckner-i.github.io/charts/",
-      version: "1.7.0",
-    },
-  });
+export class DBOperator extends ServiceResource<DBOperatorArgs> {
+  protected chart(): string {
+    return "db-operator";
+  }
 
-  new CustomResource(`db-operator-instance`, {
-    apiVersion: "kci.rocks/v1beta1",
-    kind: "DbInstance",
-    metadata: {
-      name: "main",
-      namespace,
-    },
-    spec: {
-      adminSecretRef: {
-        Name: secretName,
-        Namespace: namespace,
+  protected repo(): string {
+    return "https://kloeckner-i.github.io/charts/";
+  }
+
+  protected version(): string {
+    return "1.7.0";
+  }
+
+  protected secrets(args: DBOperatorArgs): Record<string, Record<string, any>> {
+    const key = `${this.name}-secret`;
+
+    return {
+      [key]: {
+        user: args.dbUser.apply(base64),
+        password: args.dbPassword.apply(base64),
       },
-      engine: "postgres",
-      generic: {
-        host: `postgresql.${namespace}.svc.cluster.local`,
-        port: 5432,
+    };
+  }
+
+  protected resources(
+    args: DBOperatorArgs,
+  ): Record<string, CustomResourceArgs> {
+    const key = `${this.name}-instance`;
+    const secretName = `${this.name}-secret`;
+
+    return {
+      [key]: {
+        apiVersion: "kci.rocks/v1beta1",
+        kind: "DbInstance",
+        metadata: {
+          name: "main",
+          namespace: this.namespace,
+        },
+        spec: {
+          adminSecretRef: {
+            Name: secretName,
+            Namespace: this.namespace,
+          },
+          engine: "postgres",
+          generic: {
+            host: args.dbHost,
+            port: 5432,
+          },
+        },
       },
-    },
-  });
-};
+    };
+  }
+}
