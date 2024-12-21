@@ -1,7 +1,7 @@
 import { Output } from "@pulumi/pulumi";
 import { Namespace } from "@pulumi/kubernetes/core/v1/namespace";
 
-export const createNamespace = (name: Output<string>) => {
+export const createNamespace = (name: Output<string>): Output<Namespace> =>
   name.apply(
     (name) =>
       new Namespace(`namespace-${name}`, {
@@ -13,4 +13,3 @@ export const createNamespace = (name: Output<string>) => {
         },
       }),
   );
-};

@@ -9,6 +9,7 @@ import {
   ComponentResourceOptions,
   Output,
   output,
+  interpolate,
 } from "@pulumi/pulumi";
 
 export interface ServiceResourceArgs {
@@ -33,7 +34,9 @@ export abstract class ServiceResource<
     this.createHelmChart(args);
     this.createResources(args);
 
-    this.host = output(`${this.name}.${this.namespace}.svc.cluster.local`);
+    this.host = output(
+      interpolate`${this.name}.${this.namespace}.svc.cluster.local`,
+    );
 
     this.registerOutputs({
       host: this.host,
@@ -48,20 +51,20 @@ export abstract class ServiceResource<
 
   protected abstract version(): string;
 
-  protected secrets(args: T): Record<string, Record<string, any>> {
+  protected getSecrets(args: T): Record<string, Record<string, any>> {
     return {};
   }
 
-  protected buildValues(args: T): Record<string, any> {
+  protected getBuildValues(args: T): Record<string, any> {
     return {};
   }
 
-  protected resources(args: T): Record<string, CustomResourceArgs> {
+  protected getResources(args: T): Record<string, CustomResourceArgs> {
     return {};
   }
 
   private createSecrets(args: T) {
-    Object.entries(this.secrets(args)).forEach(([name, data]) => {
+    Object.entries(this.getSecrets(args)).forEach(([name, data]) => {
       const s = new Secret(`${this.name}-secret-${name}`, {
         metadata: {
           name,
@@ -69,14 +72,10 @@ export abstract class ServiceResource<
         },
         data,
       });
-
-      this.registerOutputs({
-        [name]: s,
-      });
     });
   }
 
-  private createHelmChart(args: T): CustomResource {
+  private createHelmChart(args: T) {
     const spec: Record<string, any> = {
       chart: this.chart(),
       targetNamespace: this.namespace,
@@ -89,12 +88,12 @@ export abstract class ServiceResource<
       spec.repo = repo;
     }
 
-    const values = this.buildValues(args);
+    const values = this.getBuildValues(args);
     if (args) {
       spec.valuesContent = stringify(values);
     }
 
-    const cr = new CustomResource(`${this.name}-helm`, {
+    new CustomResource(`${this.name}-helm`, {
       apiVersion: "helm.cattle.io/v1",
       kind: "HelmChart",
       metadata: {
@@ -103,17 +102,11 @@ export abstract class ServiceResource<
       },
       spec: spec,
     });
-
-    this.registerOutputs({
-      helm: cr,
-    });
-
-    return cr;
   }
 
   private createResources(args: T) {
-    Object.entries(this.resources(args)).forEach(([name, data]) => {
-      const r = new CustomResource(`${this.name}-${name}`, data);
+    Object.entries(this.getResources(args)).forEach(([name, data]) => {
+      new CustomResource(`${this.name}-${name}`, data);
     });
   }
 }

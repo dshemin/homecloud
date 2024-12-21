@@ -19,7 +19,9 @@ export class Postresql extends ServiceResource<PostgresqlArgs> {
     return "16.2.1";
   }
 
-  protected secrets(args: PostgresqlArgs): Record<string, Record<string, any>> {
+  protected getSecrets(
+    args: PostgresqlArgs,
+  ): Record<string, Record<string, any>> {
     const key = `${this.name}-secret`;
 
     return {
@@ -29,7 +31,7 @@ export class Postresql extends ServiceResource<PostgresqlArgs> {
     };
   }
 
-  protected buildValues(args: PostgresqlArgs): Record<string, any> {
+  protected getBuildValues(args: PostgresqlArgs): Record<string, any> {
     return {
       auth: {
         existingSecret: `${this.name}-secret`,

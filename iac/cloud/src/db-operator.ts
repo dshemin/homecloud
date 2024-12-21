@@ -23,7 +23,9 @@ export class DBOperator extends ServiceResource<DBOperatorArgs> {
     return "1.7.0";
   }
 
-  protected secrets(args: DBOperatorArgs): Record<string, Record<string, any>> {
+  protected getSecrets(
+    args: DBOperatorArgs,
+  ): Record<string, Record<string, any>> {
     const key = `${this.name}-secret`;
 
     return {
@@ -34,7 +36,7 @@ export class DBOperator extends ServiceResource<DBOperatorArgs> {
     };
   }
 
-  protected resources(
+  protected getResources(
     args: DBOperatorArgs,
   ): Record<string, CustomResourceArgs> {
     const key = `${this.name}-instance`;

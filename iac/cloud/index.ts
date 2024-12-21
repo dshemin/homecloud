@@ -1,6 +1,6 @@
 import { CertManager } from "@pulumi/kubernetes-cert-manager";
 
-import { createNamespace } from "./src/namespaces";
+import { createNamespace } from "./src/namespace";
 import { Postresql } from "./src/postgresql";
 import { WhoDB } from "./src/whodb";
 import { DBOperator } from "./src/db-operator";

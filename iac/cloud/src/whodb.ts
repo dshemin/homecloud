@@ -17,7 +17,7 @@ export class WhoDB extends ServiceResource<WhoDBArgs> {
     return "0.1.0";
   }
 
-  protected buildValues(args: WhoDBArgs): Record<string, any> {
+  protected getBuildValues(args: WhoDBArgs): Record<string, any> {
     return {
       profiles: {
         postgres: [
