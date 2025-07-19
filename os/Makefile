@@ -1,24 +1,16 @@
-ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-PATH_TO_VARAIBLES_FILE = $(ROOT_DIR)/userpatches/overlay/variables.sh
+LAB_IMAGE_NAME := yoctolab
+LAB_IMAGE_TAG := latest
+LAB_IMAGE := $(LAB_IMAGE_NAME):$(LAB_IMAGE_TAG)
+LAB_VOLUME := $(LAB_IMAGE_NAME)
 
-# Запускает сборку образа ОС для OrangePI 5b
-.PHONY: run
-run:
-ifeq ("$(wildcard $(PATH_TO_VARAIBLES_FILE))","")
-    $(error "File $(PATH_TO_VARAIBLES_FILE) not found")
-endif
-	cp -r ./userpatches/ ./armbian/userpatches/
-	./armbian/compile.sh build \
-		BOARD=orangepi5 \
-		BRANCH=legacy \
-		BUILD_DESKTOP=no \
-		BUILD_MINIMAL=yes \
-		KERNEL_CONFIGURE=no \
-		KERNEL_GIT=shallow \
-		DISABLE_IPV6=false \
-		RELEASE=jammy \
-		CONSOLE_AUTOLOGIN=no
+all:
+	@echo "Not implemented"
 
-.PHONY: lint
-lint:
-	shellcheck userpatches/customize-image.sh
+lab: labimage
+	docker volume create --name $(LAB_VOLUME)
+	docker run -it -v $(LAB_VOLUME):/workdir -w /workdir $(LAB_IMAGE)
+	
+labimage:
+	docker build . -t $(LAB_IMAGE)
+
+.PHONY: all image lab
