@@ -1,0 +1,7 @@
+# For MacOS use official instruction https://github.com/crops/docker-win-mac-docs/wiki/Mac-Instructions
+run:
+	docker run --rm -it -v os_poky:/workdir crops/poky --workdir=/workdir
+
+setup: # Setups machine for running poky. Should be called once.
+	sudo ifconfig lo0 127.0.0.2 alias up || true
+	docker compose up
